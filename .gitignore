@@ -1,22 +1,7 @@
-# Virtual environment
-.venv/
-
-# Environment variables and secrets
 .env
-
-# Python cache
+.venv/
 __pycache__/
-*.py[cod]
-
-# Pytest
+*.pyc
 .pytest_cache/
-
-# macOS
+logs/
 .DS_Store
-
-# VS Code
-.vscode/
-
-# Raw and processed data
-data/raw/*
-data/processed/*
