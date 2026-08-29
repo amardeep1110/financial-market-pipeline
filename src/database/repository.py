@@ -1,3 +1,4 @@
+from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 
 from src.database.models import MarketPrice
@@ -49,3 +50,27 @@ def save_market_data(df, symbol, engine):
         )
 
         connection.execute(statement)
+def get_market_data(engine, symbol):
+    """
+    Retrieve processed market data for a symbol.
+
+    Returns:
+        pandas.DataFrame: Market data ordered by datetime.
+    """
+    import pandas as pd
+
+    query = (
+        select(MarketPrice)
+        .where(MarketPrice.symbol == symbol)
+        .order_by(MarketPrice.datetime)
+    )
+
+    with engine.connect() as connection:
+        result = connection.execute(query)
+
+        rows = result.mappings().all()
+
+    if not rows:
+        return pd.DataFrame()
+
+    return pd.DataFrame(rows)
