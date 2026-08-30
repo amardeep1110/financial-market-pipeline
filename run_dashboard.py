@@ -1,12 +1,20 @@
 import os
-import subprocess
 import sys
+import subprocess
 
 
-project_root = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(
+    os.path.abspath(__file__)
+)
 
-env = os.environ.copy()
-env["PYTHONPATH"] = project_root
+sys.path.insert(0, PROJECT_ROOT)
+
+
+dashboard_path = os.path.join(
+    PROJECT_ROOT,
+    "dashboard",
+    "app.py",
+)
 
 
 subprocess.run(
@@ -15,7 +23,7 @@ subprocess.run(
         "-m",
         "streamlit",
         "run",
-        "dashboard/app.py",
+        dashboard_path,
     ],
-    env=env,
+    check=True,
 )

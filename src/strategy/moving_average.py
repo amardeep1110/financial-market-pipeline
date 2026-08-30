@@ -7,25 +7,16 @@ def moving_average_crossover(
     long_window=50,
 ):
     """
-    Generate a moving-average crossover trading strategy.
+    Moving-average crossover trading strategy.
 
-    Strategy:
-        - BUY  when short MA > long MA
-        - SELL when short MA < long MA
+    BUY:
+        Short MA crosses above Long MA.
 
-    Parameters:
-        df: pandas DataFrame containing a 'close' column
-        short_window: short moving-average period
-        long_window: long moving-average period
+    SELL:
+        Short MA crosses below Long MA.
 
-    Returns:
-        pandas.DataFrame with:
-            short_ma
-            long_ma
-            signal
-            position
-            strategy_return
-            cumulative_strategy_return
+    The position is shifted by one period
+    to prevent look-ahead bias.
     """
 
     if "close" not in df.columns:
@@ -38,26 +29,31 @@ def moving_average_crossover(
             "short_window must be smaller than long_window."
         )
 
+    if short_window <= 0 or long_window <= 0:
+        raise ValueError(
+            "Moving-average windows must be positive."
+        )
+
     result = df.copy()
 
     # --------------------------------------------------
-    # Calculate moving averages
+    # Moving averages
     # --------------------------------------------------
 
     result["short_ma"] = (
         result["close"]
-        .rolling(window=short_window)
+        .rolling(short_window)
         .mean()
     )
 
     result["long_ma"] = (
         result["close"]
-        .rolling(window=long_window)
+        .rolling(long_window)
         .mean()
     )
 
     # --------------------------------------------------
-    # Generate trading signal
+    # Trading signal
     # --------------------------------------------------
 
     result["signal"] = 0
@@ -73,27 +69,45 @@ def moving_average_crossover(
     ] = -1
 
     # --------------------------------------------------
-    # Generate position
+    # Detect crossover events
     # --------------------------------------------------
 
-    # Shift signal by one period to avoid
-    # look-ahead bias.
-    result["position"] = result["signal"].shift(1)
+    previous_signal = result["signal"].shift(1)
+
+    result["buy_signal"] = (
+        (result["signal"] == 1)
+        & (previous_signal <= 0)
+    )
+
+    result["sell_signal"] = (
+        (result["signal"] == -1)
+        & (previous_signal >= 0)
+    )
+
+    # --------------------------------------------------
+    # Position
+    # --------------------------------------------------
 
     result["position"] = (
-        result["position"]
+        result["signal"]
+        .shift(1)
         .fillna(0)
     )
 
     # --------------------------------------------------
-    # Calculate strategy returns
+    # Daily returns
     # --------------------------------------------------
 
     if "daily_return" not in result.columns:
+
         result["daily_return"] = (
             result["close"]
             .pct_change()
         )
+
+    # --------------------------------------------------
+    # Strategy returns
+    # --------------------------------------------------
 
     result["strategy_return"] = (
         result["position"]
@@ -101,7 +115,7 @@ def moving_average_crossover(
     )
 
     # --------------------------------------------------
-    # Calculate cumulative returns
+    # Cumulative strategy returns
     # --------------------------------------------------
 
     result["cumulative_strategy_return"] = (
